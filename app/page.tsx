@@ -4,14 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import LandingSections from "@/components/LandingSections";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowBigDown,
-  Loader2,
-  MessageCircle,
-  MessageSquareCodeIcon,
-  Send,
-  X,
-} from "lucide-react";
+import { ArrowBigDown, Loader2, MessageCircle, Send, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Card,
   CardContent,
@@ -26,6 +21,7 @@ export default function Chat() {
   const [showChatIcon, setShowChatIcon] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const chatIconRef = useRef<HTMLButtonElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const {
     messages,
@@ -60,6 +56,11 @@ export default function Chat() {
     setIsChatOpen(!isChatOpen);
   };
 
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
   return (
     <div className="flex flex-col min-h-screen">
       <LandingSections />
@@ -121,9 +122,55 @@ export default function Chat() {
                   {messages?.map((message, index) => (
                     <div
                       key={index}
-                      className="flex flex-col items-start gap-2 px-4 py-3 text-sm"
+                      className={`mb-4 px-4 ${
+                        message.role === "user" ? "text-right" : "text-left"
+                      }`}
                     >
-                      skdjvh
+                      <div
+                        className={`inline-block p-2 rounded-lg ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        }`}
+                      >
+                        <ReactMarkdown
+                          children={message.content}
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({
+                              node,
+                              inline,
+                              className,
+                              children,
+                              ...props
+                            }) {
+                              return inline ? (
+                                <code
+                                  {...props}
+                                  className="bg-gray-200 px-1 rounded"
+                                >
+                                  {children}
+                                </code>
+                              ) : (
+                                <pre>
+                                  <code
+                                    {...props}
+                                    className="bg-gray-200 p-2 rounded"
+                                  >
+                                    {children}
+                                  </code>
+                                </pre>
+                              );
+                            },
+                            ul: ({ children }) => (
+                              <ul className="list-disc ml-4">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                              <li className="list-decimal ml-4">{children}</li>
+                            ),
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
                   {isLoading && (
@@ -140,16 +187,17 @@ export default function Chat() {
                   )}
                   {error && (
                     <div className="w-full items-center flex justify-center gap-3">
-                   <p className="text-xs text-red-500">An error occured!</p>
-                    <button
-                      className="underline"
-                      type="button"
-                      onClick={() => reload()}
-                    >
-                      Retry
-                    </button>
-                  </div>
+                      <p className="text-xs text-red-500">An error occured!</p>
+                      <button
+                        className="underline"
+                        type="button"
+                        onClick={() => reload()}
+                      >
+                        Retry
+                      </button>
+                    </div>
                   )}
+                  <div ref={scrollRef}></div>
                 </ScrollArea>
               </CardContent>
               <CardFooter>
